@@ -5,7 +5,7 @@ Simple service to display time and weather (temperature) on B4CKSP4CE signage
 To run:
 ```shell
 yarn
-yarn main
+yarn start
 ```
 
 All vars that you need to change are in `.env.example`
