@@ -12,6 +12,8 @@ dotenv.config();
 const CA_CERTIFICATE_PATH = process.env.CA_CERTIFICATE_PATH ?? 'ca-cert.pem';
 const MQTT_URL = process.env.MQTT_URL ?? 'mqtts://b4ck:b4ck@mqtt.internal.0x08.in';
 
+const timezoneOffset = parseInt(process.env.DISPLAY_TZ_OFFSET ?? "0") * 60 * 60 * 1000;
+
 const client = mqtt.connect(MQTT_URL, {
     ca: [fs.readFileSync(CA_CERTIFICATE_PATH)]
 });
@@ -38,7 +40,7 @@ let weather: Weather | undefined;
 
 function drawAll(): Emulator {
     const emulator = new Emulator(font, 12);
-    const timeString = convertToCp1251(getTimeString(Date.now()));
+    const timeString = convertToCp1251(getTimeString(Date.now() + timezoneOffset));
     const weatherString = convertToCp1251(weather ? Math.floor(weather.temperature) + "\u00b0C" : "N/A");
     emulator.clear(false);
     emulator.drawText(timeString, 0, 0, false);
