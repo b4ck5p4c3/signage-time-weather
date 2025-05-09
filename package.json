@@ -1,20 +1,44 @@
 {
-  "name": "signage-time-weather",
-  "version": "1.0.0",
-  "description": "",
-  "main": "main.ts",
-  "scripts": {
-    "start": "ts-node main.ts"
+  "name": "@bksp/signage-time-weather",
+  "description": "Exports leases from OPNSense into zonefile",
+  "version": "0.0.0",
+  "license": "MPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/b4ck5p4c3/signage-time-weather.git"
   },
-  "author": "radioegor146",
-  "license": "MIT",
+  "author": {
+    "name": "B4CKSP4CE Team & Contributors",
+    "email": "info@0x08.in",
+    "url": "https://0x08.in"
+  },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "start": "bun run src/index.ts",
+    "build": "bun build --compile --minify --sourcemap ./src/index.ts --outfile ./dist/signage-time-weather"
+  },
   "dependencies": {
-    "@types/node": "^20.10.6",
-    "axios": "^1.6.5",
-    "dotenv": "^16.3.1",
-    "mqtt": "^5.1.3",
-    "protobufjs": "^7.2.5",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
-  }
+    "axios": "^1.9.0",
+    "mqtt": "^5.12.1",
+    "protobufjs": "^7.4.0",
+    "tslog": "^4.9.3"
+  },
+  "devDependencies": {
+    "@bksp/style-guide": "^0.16.0",
+    "@tsconfig/strictest": "^2.0.5",
+    "@types/bun": "^1.2.12",
+    "eslint": "^9.26.0",
+    "neostandard": "^0.12.1",
+    "pino-pretty": "^13.0.0",
+    "typescript": "^5.8.3"
+  },
+  "trustedDependencies": [
+    "protobufjs",
+    "unrs-resolver"
+  ]
 }
