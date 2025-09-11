@@ -87,7 +87,7 @@ function updateWeather () {
 setInterval(updateWeather, 120_000)
 updateWeather()
 
-setInterval(() => {
+function redrawAll () {
   const buffer = drawAll()
   client.publish('bus/devices/openspace-signage/background', Buffer.from(protocol.serializeSetBackgroundMessage({
     message: {
@@ -96,4 +96,11 @@ setInterval(() => {
       effectType: EffectType.RAW_BUFFER
     }
   })))
-}, 500)
+}
+
+const redrawInterval = 500;
+setInterval(() => {
+  const msPassed = Date.now() % redrawInterval;
+  const delay = msPassed ? redrawInterval - msPassed : 0;
+  setTimeout(redrawAll, delay);
+}, redrawInterval);
