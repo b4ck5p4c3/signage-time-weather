@@ -1,6 +1,7 @@
 import mqtt from 'mqtt'
 import fs from 'node:fs'
 import path from 'node:path'
+import { hkdfSync, randomUUID } from 'node:crypto';
 import { Logger } from 'tslog'
 
 import type { Weather } from './weather/weather'
@@ -10,6 +11,7 @@ import { Emulator, getStringWidth } from './signage/emulator'
 import { convertToCp1251, EffectType, Protocol } from './signage/protocol'
 import { WeatherApiComWeatherService } from './weather/weatherapicom'
 
+const BOOT_ID = randomUUID();
 const MQTT_URL = process.env.MQTT_URL ?? 'mqtt://localhost:1883'
 
 const WC_OCCUPIED_TOPIC = 'bus/states/wc/occupied'
@@ -43,10 +45,47 @@ client.on('message', (topic, payload) => {
   }
 })
 
+// Computer clocks are like a cat who never remembers where it has been, only
+// steps ahead in more or less random directions. The cat has a general idea
+// in which direction leads to food, just not a precise idea of how to get there.
+// Mathematically, this represents random walk frequency noise.
+// -- https://www.ntp.org/ntpfaq/ntp-s-related/#911-what-is-mills-speak
+//
+// So, getTimeString() produces a bit of random walk on display.
+let lastBits: undefined | number;
+let lastDateInfo: undefined | string;
+
 function getTimeString (time: number): string {
-  return `${new Date(time).getHours().toString().padStart(2, '0')}:${
-        new Date(time).getMinutes().toString().padStart(2, '0')}:${
-        new Date(time).getSeconds().toString().padStart(2, '0')}`
+  const NBSP = '\u00A0';  // \u00A0, NBSP in CP1251, font width for NBSP and ':' should match
+  const HIDT = '\u2022';  // Unicode bullet: `•` 0x2022 maps to 0x95 (149)
+  const LODT = '\u00b7';  // Middle dot: `·` 0x00B7 maps to 0xb7 (183)
+  const COLN = ':';       // font['widths'][ord(':')] == 1
+  const date = new Date(time);
+  const salt = 'X-Clacks-Overhead: Professor David L. Mills';
+  const info = date.toString() + ((time % 1000) >= 500 ? '^' : '_');
+  if (info !== lastDateInfo) {
+    lastDateInfo = info;
+    const buff = hkdfSync('sha256', BOOT_ID, salt, info, 1);
+    const view = new Uint8Array(buff);
+    for (var i = 0; i < buff.byteLength; i++) {
+      const biLo = view[i] & 15;
+      if (biLo != lastBits) {
+        lastBits = biLo;
+        break;
+      }
+      const biHi = (view[i] >> 4) & 15;
+      if (biHi != lastBits) {
+        lastBits = biHi;
+        break;
+      }
+    }
+  }
+  const dict = [NBSP, LODT, HIDT, COLN];
+  const c1st = dict[lastBits >> 2];
+  const c2nd = dict[lastBits & 3];
+  return `${date.getHours().toString().padStart(2, '0')}${c1st}${
+        date.getMinutes().toString().padStart(2, '0')}${c2nd}${
+        date.getSeconds().toString().padStart(2, '0')}`
 }
 
 if (process.env.WEATHER_API_COM_KEY === undefined) {
