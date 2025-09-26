@@ -115,15 +115,17 @@ function drawAll (): Emulator {
   const left = convertToCp1251(getTimeString(now + timezoneOffset))
 
   const co2good = now - co2LastUpdate < 15_000
-  let co2label = undefined
+  let co2label = null
   if (co2good && CO2_YELLOW_GE <= co2ppm < CO2_RED_GE)
     co2label = (now / (4 * redrawInterval)) & 1 ? 'co2' : '';
   else if (co2good && CO2_RED_GE <= co2ppm)
     co2label = (now / redrawInterval) & 1 ? 'CO2' : '';
-  const right =
-    isWCOccupied ? convertToCp1251('WC')
-    ? co2label !== undefined : convertToCp1251(co2label)
-    : convertToCp1251(weather ? Math.round(weather.temperature) + '\u00B0C' : '')
+  const text =
+    isWCOccupied        ? 'WC'
+    : co2label !== null ? co2label
+    : weather           ? Math.round(weather.temperature) + '\u00B0C'
+    : ''
+  const right = convertToCp1251(text)
 
   emulator.clear(false)
   emulator.drawText(left, 0, 0, false)
