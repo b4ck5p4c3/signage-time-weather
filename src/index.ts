@@ -114,7 +114,7 @@ function drawAll (): Emulator {
   const now = Date.now()
   const left = convertToCp1251(getTimeString(now + timezoneOffset))
 
-  const co2good = now - co2LastUpdate < 15_000
+  const co2good = now - co2LastUpdate < 20_000  // sensor reports every 15s
   let co2label = null
   if (co2good && CO2_YELLOW_GE <= co2ppm && co2ppm < CO2_RED_GE)
     co2label = (now / (4 * redrawInterval)) & 1 ? 'co2' : '';
