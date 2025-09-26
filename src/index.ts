@@ -15,6 +15,10 @@ const BOOT_ID = randomUUID();
 const MQTT_URL = process.env.MQTT_URL ?? 'mqtt://localhost:1883'
 
 const WC_OCCUPIED_TOPIC = 'bus/states/wc/occupied'
+// These values should be in-sync with b4ck5p4c3/iot-devices:devices/indoor-meteo/indoor-meteo.yaml
+const CO2_TOPIC = 'bus/devices/indoor-meteo/sensor/mhz19_co2/state'
+const CO2_YELLOW_GE = 800;
+const CO2_RED_GE = 1200;
 
 const log = new Logger()
 
@@ -34,9 +38,17 @@ client.on('error', error => { throw error })
  * Toilet AI Assistant
  */
 let isWCOccupied: boolean = false
+let co2ppm: number = 600
+let co2LastUpdate: number = 0
 client.subscribe(WC_OCCUPIED_TOPIC)
+client.subscribe(CO2_TOPIC)
 client.on('message', (topic, payload) => {
   switch (topic) {
+    case CO2_TOPIC: {
+      co2ppm = parseInt(payload.toString())
+      co2LastUpdate = Date.now()
+      log.debug('CO2 updated: %s ppm', co2ppm)
+    }
     case WC_OCCUPIED_TOPIC: {
       isWCOccupied = payload.toString() === 'true'
       log.debug('WC occupation update: %s', isWCOccupied ? 'occupied' : 'vacant')
@@ -99,10 +111,18 @@ let weather: undefined | Weather
 
 function drawAll (): Emulator {
   const emulator = new Emulator(font, 12)
-  const left = convertToCp1251(getTimeString(Date.now() + timezoneOffset))
+  const now = Date.now()
+  const left = convertToCp1251(getTimeString(now + timezoneOffset))
 
-  const right = isWCOccupied
-    ? convertToCp1251('WC')
+  const co2good = now - co2LastUpdate < 15_000
+  let co2label = undefined
+  if (co2good && CO2_YELLOW_GE <= co2ppm < CO2_RED_GE)
+    co2label = (now / (4 * redrawInterval)) & 1 ? 'co2' : '';
+  else if (co2good && CO2_RED_GE <= co2ppm)
+    co2label = (now / redrawInterval) & 1 ? 'CO2' : '';
+  const right =
+    isWCOccupied ? convertToCp1251('WC')
+    ? co2label !== undefined : convertToCp1251(co2label)
     : convertToCp1251(weather ? Math.round(weather.temperature) + '\u00B0C' : '')
 
   emulator.clear(false)
